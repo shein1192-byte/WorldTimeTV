@@ -57,7 +57,7 @@ public final class MainActivity extends Activity {
     clock=label("",76,Color.WHITE,false);clock.setTypeface(Typeface.create("sans-serif-light",Typeface.NORMAL));root.addView(clock);
     date=label("",20,0xffbfcbd7,false);root.addView(date);
     system=label("",15,0xff9daabc,false);root.addView(system);
-    TextView tip=label("ВЫБЕРИ ГОРОД С ПУЛЬТА  •  OK — ПОКАЗАТЬ ВРЕМЯ ГОРОДА",17,CYAN,false);
+    TextView tip=label("ВЫБЕРИ ГОРОД С ПУЛЬТА  •  OK — ПРИМЕНИТЬ К ТЕЛЕВИЗОРУ",17,CYAN,false);
     LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(-1,-2);tp.topMargin=dp(20);root.addView(tip,tp);
     HorizontalScrollView scroll=new HorizontalScrollView(this);
     scroll.setHorizontalScrollBarEnabled(false);
@@ -69,17 +69,12 @@ public final class MainActivity extends Activity {
       tile.setGravity(Gravity.CENTER);tile.setFocusable(true);
       LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(dp(205),dp(105));p.rightMargin=dp(12);cards.addView(tile,p);
       tiles[i]=tile;
-      tile.setOnClickListener(v->{selected=n;getPreferences(MODE_PRIVATE).edit().putInt("city",n).apply();render();});
+      tile.setOnClickListener(v->{selected=n;getPreferences(MODE_PRIVATE).edit().putInt("city",n).apply();render();applySystemTimeZone();});
       tile.setOnFocusChangeListener((v,focus)->style(n,focus));
     }
-    TextView notice=label("Выбор города меняет часы только в приложении, но не системное время телевизора.",16,0xffa4b4c8,false);
+    TextView notice=label("При нажатии OK часовой пояс автоматически применяется к телевизору через Shizuku.",16,0xffa4b4c8,false);
     root.addView(notice);
-    TextView action=label("ПРИМЕНИТЬ ЧАСОВОЙ ПОЯС К ТЕЛЕВИЗОРУ  ⏰",19,Color.WHITE,true);
-    action.setGravity(Gravity.CENTER);action.setFocusable(true);action.setPadding(dp(12),dp(14),dp(12),dp(14));
-    GradientDrawable bg=new GradientDrawable();bg.setColor(0xff167a87);bg.setCornerRadius(dp(12));action.setBackground(bg);
-    LinearLayout.LayoutParams ap=new LinearLayout.LayoutParams(-1,dp(62));ap.topMargin=dp(16);root.addView(action,ap);
-    status=label("Для изменения системы запусти Shizuku через ADB.",15,0xffbfcbd7,false);root.addView(status);
-    action.setOnClickListener(v->applySystemTimeZone());
+    status=label("Для изменения системного пояса запусти Shizuku через ADB.",16,0xffbfcbd7,false);root.addView(status);
     render();
     tiles[selected].requestFocus();
   }
