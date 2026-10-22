@@ -32,12 +32,19 @@ public final class MainActivity extends Activity {
   private TextView clock,date,city,system,status;
   private final ExecutorService worker=Executors.newSingleThreadExecutor();
   private static final int SHIZUKU_REQUEST=472;
+  private final Shizuku.OnRequestPermissionResultListener permissionListener=(requestCode,grantResult)->{
+    if(requestCode==SHIZUKU_REQUEST){runOnUiThread(()->{
+      if(grantResult==PackageManager.PERMISSION_GRANTED)applySystemTimeZone();
+      else if(status!=null)status.setText("Доступ Shizuku не предоставлен.");
+    });}
+  };
   private TextView[] tiles=new TextView[CITIES.length];
   private int selected=5;
   private final Runnable ticker=new Runnable(){public void run(){render();handler.postDelayed(this,1000);}};
 
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
+    Shizuku.addRequestPermissionResultListener(permissionListener);
     SharedPreferences prefs=getPreferences(MODE_PRIVATE);
     selected=Math.max(0,Math.min(CITIES.length-1,prefs.getInt("city",5)));
     LinearLayout root=new LinearLayout(this);
@@ -107,13 +114,6 @@ public final class MainActivity extends Activity {
       });
     }catch(Exception e){status.setText("Shizuku недоступна: "+e.getMessage());}
   }
-  @Override public void onRequestPermissionsResult(int requestCode,String[] permissions,int[] results){
-    super.onRequestPermissionsResult(requestCode,permissions,results);
-    if(requestCode==SHIZUKU_REQUEST){
-      if(results.length>0&&results[0]==PackageManager.PERMISSION_GRANTED)applySystemTimeZone();
-      else status.setText("Доступ Shizuku не предоставлен.");
-    }
-  }
   private String fmt(String zone,String pattern){
     SimpleDateFormat f=new SimpleDateFormat(pattern,new Locale("ru","RU"));
     f.setTimeZone(TimeZone.getTimeZone(zone));
@@ -145,5 +145,5 @@ public final class MainActivity extends Activity {
   private int dp(int n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
   @Override protected void onResume(){super.onResume();handler.removeCallbacks(ticker);handler.post(ticker);}
   @Override protected void onPause(){handler.removeCallbacks(ticker);super.onPause();}
-  @Override protected void onDestroy(){worker.shutdownNow();super.onDestroy();}
+  @Override protected void onDestroy(){Shizuku.removeRequestPermissionResultListener(permissionListener);worker.shutdownNow();super.onDestroy();}
 }
