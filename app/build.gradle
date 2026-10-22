@@ -1,0 +1,6 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.arctic.worldtime'
+    compileSdk 35
+    defaultConfig { applicationId 'com.arctic.worldtime'; minSdk 26; targetSdk 28; versionCode 1; versionName '1.0' }
+}
