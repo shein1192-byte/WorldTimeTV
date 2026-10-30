@@ -17,3 +17,10 @@ Select a city, then click APPLY SYSTEM TIME ZONE. Requires Shizuku started throu
 
 ## v1.2
 Choose a city using the remote and press OK: its timezone is immediately applied to the TV via Shizuku, without a separate Apply button. The Android TV banner now displays the clock graphic. To refresh the launcher icon, install the newly built APK first; some firmware caches the previous image. Shizuku needs to be running and authorized to update the system timezone. This updates timezone only, not clock UTC time.
+
+## Shizuku reconnection (v1.4 candidate)
+The app now listens for Shizuku binder availability and disconnection. If a timezone change is requested while Shizuku is not running or permission is pending, the request is retained in memory during that app session and retried once the Shizuku service connects and permission is granted. Returning to the app also checks service status.
+
+**Important:** This does not start the Shizuku service itself. With standard non-root ADB startup, Shizuku usually needs to be started again after a TV reboot. No automatic rootless startup capability is claimed. The existing clock display and remote controls remain unchanged.
+
+Testing on the target HyperOS TV is required; the change is not yet verified on hardware.

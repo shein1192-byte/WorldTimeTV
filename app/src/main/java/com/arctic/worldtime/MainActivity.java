@@ -41,12 +41,25 @@ public final class MainActivity extends Activity {
   private TextView clock,city,date,system,status;
   private String selectedZone="Asia/Vladivostok";
   private boolean pendingClockPermission=false;
+  private boolean pendingZoneApply=false;
+  private boolean shizukuReady=false;
+  private final Shizuku.OnBinderReceivedListener binderReceived=()->runOnUiThread(()->{
+    shizukuReady=true;
+    showStatus("Shizuku подключена. Проверяю доступ...");
+    if(pendingZoneApply){pendingZoneApply=false;applyZone();}
+    else showStatus("Shizuku подключена. Выбери часовой пояс для применения.");
+  });
+  private final Shizuku.OnBinderDeadListener binderDead=()->runOnUiThread(()->{
+    shizukuReady=false;
+    showStatus("Shizuku остановлена. Запусти сервис Shizuku, затем вернись в часы.");
+  });
   private static final int REQUEST=472;
   private final Shizuku.OnRequestPermissionResultListener permission=(request,result)->{
     if(request==REQUEST)runOnUiThread(()->{
       if(result==PackageManager.PERMISSION_GRANTED){
         if(pendingClockPermission){pendingClockPermission=false;openManualTime();}
-        else applyZone();
+        else if(pendingZoneApply){pendingZoneApply=false;applyZone();}
+        else showStatus("Shizuku разрешена.");
       } else showStatus("Доступ Shizuku не предоставлен.");
     });
   };
@@ -55,6 +68,8 @@ public final class MainActivity extends Activity {
   @Override public void onCreate(Bundle b){
     super.onCreate(b);
     Shizuku.addRequestPermissionResultListener(permission);
+    Shizuku.addBinderReceivedListenerSticky(binderReceived);
+    Shizuku.addBinderDeadListener(binderDead);
     selectedZone=getPreferences(MODE_PRIVATE).getString("zone","Asia/Vladivostok");
     if(!Arrays.asList(ZONES).contains(selectedZone))selectedZone="Asia/Vladivostok";
     LinearLayout root=new LinearLayout(this);
@@ -145,15 +160,22 @@ public final class MainActivity extends Activity {
   }
   private boolean ensureShizuku(boolean manual){
     try {
-      if(!Shizuku.pingBinder()){showStatus("Shizuku остановлена. Запусти Shizuku через atvTools.");return false;}
+      if(!Shizuku.pingBinder()){
+        if(!manual)pendingZoneApply=true;
+        showStatus("Shizuku не запущена. Запусти сервис через ADB/atvTools, после чего приложение подключится автоматически.");
+        return false;
+      }
       if(Shizuku.checkSelfPermission()!=PackageManager.PERMISSION_GRANTED){
-        pendingClockPermission=manual;showStatus("Разреши доступ к Shizuku.");
+        pendingClockPermission=manual;
+        if(!manual)pendingZoneApply=true;
+        showStatus("Разреши доступ к Shizuku.");
         Shizuku.requestPermission(REQUEST);return false;
       }return true;
     }catch(Exception e){showStatus("Shizuku недоступна: "+e.getMessage());return false;}
   }
   private void applyZone(){
     if(!ensureShizuku(false))return;
+    pendingZoneApply=false;
     final String requested=selectedZone;
     showStatus("Устанавливаю системный пояс: "+requested);
     worker.execute(()->{
@@ -195,7 +217,16 @@ public final class MainActivity extends Activity {
     b.setOnClickListener(v->onClick.run());b.setFocusable(true);return b;
   }
   private int dp(int n){return(int)(n*getResources().getDisplayMetrics().density+.5f);}
-  @Override protected void onResume(){super.onResume();handler.removeCallbacks(ticker);handler.post(ticker);}
+  @Override protected void onResume(){
+    super.onResume();handler.removeCallbacks(ticker);handler.post(ticker);
+    try{
+      shizukuReady=Shizuku.pingBinder();
+      if(shizukuReady){
+        if(pendingZoneApply){pendingZoneApply=false;applyZone();}
+        else showStatus("Shizuku подключена. Готово к изменению системного времени.");
+      }
+    }catch(Exception ignored){shizukuReady=false;}
+  }
   @Override protected void onPause(){handler.removeCallbacks(ticker);super.onPause();}
-  @Override protected void onDestroy(){Shizuku.removeRequestPermissionResultListener(permission);handler.removeCallbacks(ticker);worker.shutdownNow();super.onDestroy();}
+  @Override protected void onDestroy(){Shizuku.removeRequestPermissionResultListener(permission);Shizuku.removeBinderReceivedListener(binderReceived);Shizuku.removeBinderDeadListener(binderDead);handler.removeCallbacks(ticker);worker.shutdownNow();super.onDestroy();}
 }
