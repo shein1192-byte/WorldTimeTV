@@ -14,13 +14,14 @@ import io.github.muntashirakon.adb.AdbStream;
 public final class LocalAdbStarter {
   private static final String SCRIPT="/sdcard/Android/data/moe.shizuku.privileged.api/start.sh";
   private LocalAdbStarter(){}
-  public static String start(Context context) throws Exception {
+  public static String start(Context context) throws Exception { return command(context, "sh "+SCRIPT); }
+  public static String command(Context context, String cmd) throws Exception {
     KeyPair keys=loadKeys(context);
     Certificate cert=new PublicKeyCertificate(keys.getPublic());
     try(AdbConnection conn=AdbConnection.create("127.0.0.1",5555,keys.getPrivate(),cert,android.os.Build.VERSION.SDK_INT)){
       if(!conn.connect(15000,TimeUnit.MILLISECONDS,false))
         return "ADB не авторизован. Подтверди RSA-ключ на экране телевизора и повтори запуск.";
-      try(AdbStream stream=conn.open("shell:sh "+SCRIPT+"; echo WORLDTIME_EXIT:$?")){
+      try(AdbStream stream=conn.open("shell:"+cmd+"; echo WORLDTIME_EXIT:$?")){
         InputStream input=stream.openInputStream();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         byte[] buf=new byte[2048];int n;
@@ -33,8 +34,8 @@ public final class LocalAdbStarter {
           if(output.size()==0)throw closed;
         }
         String result=output.toString("UTF-8");
-        if(result.contains("WORLDTIME_EXIT:0"))return "Команда запуска Shizuku выполнена. Проверяю сервис...";
-        return "Запуск Shizuku не подтверждён: "+(result.length()>450?result.substring(0,450):result);
+        if(result.contains("WORLDTIME_EXIT:0"))return "OK";
+        return "ADB: команда не подтверждена: "+(result.length()>450?result.substring(0,450):result);
       }
     }
   }
