@@ -1,6 +1,10 @@
 name: Build Android TV APK
 on:
   push:
+    branches: [main, feature/manual-time-embedded-adb]
+  pull_request:
+    branches: [main]
+  pull_request:
     branches: [main]
   pull_request:
     branches: [main]
