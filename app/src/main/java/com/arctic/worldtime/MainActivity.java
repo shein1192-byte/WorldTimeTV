@@ -67,10 +67,28 @@ public final class MainActivity extends Activity {
     system=text("",16,0xffbbcbdc,false);root.addView(system);
     Button zones=button("ЧАСОВЫЕ ПОЯСА  •  ВЫБРАТЬ",()->openZones());
     Button manual=button("НАСТРОИТЬ ДАТУ И ВРЕМЯ ВРУЧНУЮ",()->openManualTime());
-    root.addView(zones);root.addView(manual);
+    Button start=button("ЗАПУСТИТЬ SHIZUKU  •  ADB 5555",()->startShizuku());
+    root.addView(start);root.addView(zones);root.addView(manual);
     status=text("Выбор пояса применяется к системе через Shizuku. Для ручной установки времени автоматическая синхронизация будет отключена.",15,0xffadc4d6,false);
     root.addView(status);
     zones.requestFocus();render();
+  }
+  private void startShizuku(){
+    try{if(Shizuku.pingBinder()){showStatus("Shizuku уже работает.");return;}}catch(Exception ignored){}
+    showStatus("Подключаю ADB 127.0.0.1:5555. При запросе разреши отладку на телевизоре.");
+    worker.execute(()->{
+      String result;
+      try{result=LocalAdbStarter.start(getApplicationContext());}
+      catch(Exception e){result="ADB недоступен: "+e.getClass().getSimpleName()+": "+e.getMessage()+"; проверь ADB TCP 5555 и разрешение RSA.";}
+      final String msg=result;
+      runOnUiThread(()->{
+        showStatus(msg);
+        try{if(Shizuku.pingBinder()){
+          if(Shizuku.checkSelfPermission()!=PackageManager.PERMISSION_GRANTED)Shizuku.requestPermission(REQUEST);
+          else showStatus("Shizuku запущена и разрешена. Выбирай часовой пояс.");
+        }}catch(Exception ignored){}
+      });
+    });
   }
   private void openZones(){
     LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);layout.setPadding(dp(18),dp(12),dp(18),dp(12));layout.setBackgroundColor(BG);
