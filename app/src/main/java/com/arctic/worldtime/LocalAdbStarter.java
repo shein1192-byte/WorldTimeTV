@@ -20,13 +20,13 @@ public final class LocalAdbStarter {
     String host="127.0.0.1";
     try {
       return executeAt(host,keys,cert,command);
-    }catch(java.net.ConnectException e){
-      String local=localAddress(context);
-      if(local==null)throw e;
-      return executeAt(local,keys,cert,command);
     }catch(java.io.IOException e){
-      // Other I/O errors (including authorization) must not trigger a blind retry.
-      throw e;
+      // Some firmware binds TCP ADB to the interface IP instead of loopback.
+      // Only retry if establishing the connection failed, not if shell was executed.
+      if(!isConnectionFailure(e))throw e;
+      String local=localAddress(context);
+      if(local==null||local.equals(host))throw e;
+      return executeAt(local,keys,cert,command);
     }
   }
   private static String executeAt(String host,KeyPair keys,Certificate cert,String command)throws Exception{
@@ -50,6 +50,13 @@ public final class LocalAdbStarter {
         return response;
       }
     }
+  }
+  private static boolean isConnectionFailure(Throwable e){
+    for(Throwable current=e;current!=null;current=current.getCause()){
+      if(current instanceof java.net.ConnectException ||
+         current instanceof java.net.NoRouteToHostException)return true;
+    }
+    return false;
   }
   private static String localAddress(Context context){
     try{
