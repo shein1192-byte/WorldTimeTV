@@ -80,10 +80,9 @@ public final class MainActivity extends Activity {
       worker.execute(()->{
         String message;
         try{
-          LocalAdbStarter.execute(getApplicationContext(),"settings put global auto_time 0");
-          LocalAdbStarter.execute(getApplicationContext(),"cmd alarm set-time "+timestamp);
-          // Verify actual device clock instead of inferring success from exit code alone.
-          String check=LocalAdbStarter.execute(getApplicationContext(),"date +%s");
+          // Execute and verify over one authenticated ADB session.
+          String check=LocalAdbStarter.execute(getApplicationContext(),
+            "settings put global auto_time 0 && cmd alarm set-time "+timestamp+" && date +%s");
           long seconds=Long.parseLong(check.trim().split("\\s+")[0]);
           message=Math.abs(seconds-timestamp/1000L)<=15
             ?"Время установлено и проверено. Синхронизация по сети отключена."
