@@ -30,7 +30,7 @@ public final class LocalAdbStarter {
     }
   }
   private static String executeAt(String host,KeyPair keys,Certificate cert,String command)throws Exception{
-    try(AdbConnection conn=AdbConnection.create(host,5555,keys.getPrivate(),cert,android.os.Build.VERSION.SDK_INT)){
+    try(AdbConnection conn=AdbConnection.create(host,5555,keys.getPrivate(),cert,android.os.Build.VERSION_CODES.O_MR1)){
       if(!conn.connect(12000,TimeUnit.MILLISECONDS,false))
         throw new IOException("Подтверди RSA-авторизацию ADB на телевизоре и повтори.");
       try(AdbStream stream=conn.open("shell:"+command+"; echo WORLDTIME_EXIT:$?")){
