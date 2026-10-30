@@ -24,8 +24,13 @@ public final class LocalAdbStarter {
         InputStream input=stream.openInputStream();
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         byte[] buf=new byte[2048];int n;
-        while((n=input.read(buf))!=-1){
-          if(output.size()<32000)output.write(buf,0,Math.min(n,32000-output.size()));
+        try {
+          while((n=input.read(buf))!=-1){
+            if(output.size()<32000)output.write(buf,0,Math.min(n,32000-output.size()));
+          }
+        } catch(IOException closed) {
+          // Some ADB versions signal remote stream close via IOException.
+          if(output.size()==0)throw closed;
         }
         String result=output.toString("UTF-8");
         if(result.contains("WORLDTIME_EXIT:0"))return "Команда запуска Shizuku выполнена. Проверяю сервис...";
